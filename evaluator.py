@@ -43,13 +43,6 @@ def standard_env():
 
 
 def eval(e, sig:dict, env:Env, verbose=False):
-    '''
-    The eval routine
-    @params
-        e: expression
-        sig: side-effects
-        env: environment
-    '''
 
     if isinstance(e, bool):
         t = tc.tensor(e).float()
@@ -61,7 +54,6 @@ def eval(e, sig:dict, env:Env, verbose=False):
     elif tc.is_tensor(e):
         return e
 
-
     elif isinstance(e, str):
         try:
             return env.find(e)[e]
@@ -72,20 +64,22 @@ def eval(e, sig:dict, env:Env, verbose=False):
     op, *args = e
 
 
-    
-
     if op == "if":
         (test, conseq, alt) = args
-        exp = (conseq if eval(test, sig, env) else alt)
+        if eval(test, sig, env):
+            exp = conseq
+        else:
+            exp = alt
+
         return eval(exp, sig, env)
 
     elif op == "sample" or op == "sample*":
-        val = eval(e[2], sig, env)
+        val = eval(args[1], sig, env)
         return val.sample()
 
     elif op == "observe" or op == "observe*":
-        d = eval(e[2], sig, env)
-        v = eval(e[3], sig, env)
+        d = eval(args[1], sig, env)
+        v = eval(args[2], sig, env)
         logp = d.log_prob(v)
         sig["logW"]+= logp
         return logp
@@ -98,21 +92,15 @@ def eval(e, sig:dict, env:Env, verbose=False):
     
     else:
         proc = eval(e[0], sig, env)
-        args = [eval(arg, sig, env) for arg in e[1:]]
+        args = []
+        for arg in e[1:]:
+            args.append(eval(arg, sig, env))
 
         if isinstance(proc, str):
             raise Exception("{} is not a procedure".format(proc))
 
         return proc(*args)
         
-        # try:
-        #     return proc(*args)
-        # except:
-        #     print("there is an error here")
-        #     print(proc)
-        #     raise Exception("{} is not a procedure".format(proc))
-
-
 
 
 def evaluate(ast:dict, verbose=False):

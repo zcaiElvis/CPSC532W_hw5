@@ -39,31 +39,40 @@ def get(l,val):
 def put(vec,pos,val):
 
     if isinstance(pos, str):
-        vec_new = vec.set(pos,val)
-        return vec_new
+        if tc.is_tensor(vec):
+            vec_new = vec.detach().clone()
+            vec_new[pos] = val
+            return vec_new
+        else:
+            vec_new = vec.set(pos,val)
+            return vec_new
         
-    if tc.is_tensor(pos):
-        pos = int(pos.item())
-    
-    if tc.is_tensor(vec):
-        vec[pos] = val
-        return vec
     else:
-        vec_new = vec.set(pos,val)
-        return vec_new
+        pos = int(pos.item())
+        if tc.is_tensor(vec):
+            vec_new = vec.detach().clone()
+            vec_new[pos] = val
+            return vec_new
+        else:
+            vec_new = vec.set(pos,val)
+            return vec_new
 
 
 def append(a,b):
     if not tc.is_tensor(a):
-        a = tc.tensor(a)
+        new_a = tc.tensor(a)
+    else:
+        new_a = a.detach().clone()
 
-    return tc.cat((a, tc.tensor([b]))).clone()
+    return tc.cat((new_a, tc.tensor([b]))).clone()
 
 def conj(a,b):
     if not tc.is_tensor(a):
-        a = tc.tensor(a)
+        new_a = tc.tensor(a)
+    else:
+        new_a = a.detach().clone()
 
-    return tc.cat((tc.tensor([b]), a)).clone()
+    return tc.cat((tc.tensor([b]), new_a)).clone()
 
 
 def isempty(vec):
